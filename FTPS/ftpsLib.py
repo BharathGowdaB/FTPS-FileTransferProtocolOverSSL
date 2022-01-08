@@ -179,7 +179,9 @@ class ftpsServer :
                     pwalk = os.path.join(userDetail['home'],userDetail['cwd'])
                     plist = pwalk.split('\\')
                     if plist[0] == '' : plist.pop(0)
-                   
+                    if len(plist) <= 0 : 
+                        client.send('542 AccessError : Access denied'.encode())
+                        continue
                     pwalk = self.db['dir_hier'][plist.pop(0)]
                     per = pwalk['permission']
                     for p in plist :
@@ -294,7 +296,10 @@ class ftpsServer :
         if plist[0] == '' : plist.pop(0)
         if 'pri' in typ : typ = 'private'
         elif 'pub' in typ : typ = 'public'
-        
+
+        if len(plist) <= 0 : 
+            return '542 AccessError : Access denied'
+
         start = plist.pop(0)
         isPartial = []
         self.db['dir_hier'][start] = self.__dirHier(self.db['dir_hier'][start],plist,user,typ,args,files,{"1" : "RWX","2" : "RWX", self.db['perm_hier'].get('viewers') :"R--"},isPartial)
@@ -562,7 +567,7 @@ class ftpsServer :
         if arg : 
             user = arg.group(2)
             res['userDetail'] = self.db['users'].get(user,{})
-            if res['userDetail'] == {} : res['response'] = '531 No User'
+            if res['userDetail'] == {} : res['response'] = '531 : No User'
             else : 
                 res['response'] = '331 : Username OK, need password'
                 res['userDetail']['name'] = user
@@ -611,7 +616,6 @@ class ftpsServer :
         arg = re.compile(r'^cwd\s+([\S]*)\s*$',re.I).findall(cmd)[0]
         arg = arg.strip(' /')
         flist = arg.split('/')
-        print(268,flist)
         newCWD = user['cwd']
         newCWD = newCWD.strip(' /')
 

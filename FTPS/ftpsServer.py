@@ -27,7 +27,7 @@ db = ftpsLib.ftpsDatabase(dbPath)
 serverTerminator = threading.Thread(target=endServer, args = (),daemon=True)
 serverTerminator.start()
 
-ftpsserver = ftpsLib.ftpsServer(server_cert,server_key,db,serverDirectory = 'ServerDir')
+ftpsserver = ftpsLib.ftpsServer(server_cert,server_key,db,serverDirectory = 'ServerDirectory')
 ftpsserver.bind(host='',port=21)
 ftpsserver.start()
 

@@ -1,0 +1,1 @@
+This folder is a demo folder for ftps directory hierarchy.

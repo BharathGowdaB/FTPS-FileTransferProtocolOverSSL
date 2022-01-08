@@ -23,11 +23,11 @@
             "home": "Organization",
             "designation": "owner",
             "name": "Bharath",
-            "cwd": "wwe\\dir2",
+            "cwd": "",
             "dest": "1",
             "homePer": "RWX",
             "curPer": "RWX",
-            "pwd": "Organization"
+            "pwd": ""
         },
         "Harish": {
             "password": "2311",
@@ -55,13 +55,13 @@
         "Organization": {
             "mode": "private",
             "list": {
-                "wwe": {
+                "dir1": {
                     "mode": "private",
                     "list": {
-                        "dir2": {
+                        "sub1": {
                             "mode": "public",
                             "list": {
-                                "sub1": {
+                                "supersub1": {
                                     "mode": "private",
                                     "permission": {
                                         "1": "RWX",
@@ -70,6 +70,25 @@
                                     }
                                 }
                             },
+                            "permission": {
+                                "1": "RWX",
+                                "2": "RW-",
+                                "99": "R--"
+                            }
+                        }
+                    },
+                    "permission": {
+                        "1": "RWX",
+                        "2": "RW-",
+                        "99": "RW-"
+                    }
+                },
+                "dir2": {
+                    "mode": "private",
+                    "list": {
+                        "sub1": {
+                            "mode": "public",
+                            "list": {},
                             "permission": {
                                 "1": "RWX",
                                 "2": "RW-",
