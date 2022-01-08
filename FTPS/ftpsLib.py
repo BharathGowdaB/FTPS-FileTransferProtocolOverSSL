@@ -1,12 +1,13 @@
-import threading
-import os,sys,re,traceback
+import threading,os,sys,re
+import traceback,random,json
 import shutil
-import ssl,random
+import ssl
 from socket import *
 
 class ftpsServer :
     controlServer = None
     db = {}
+    ftpsStorage = None
     server_cert = None
     server_key = None
     serverName = 'FTPS'
@@ -21,7 +22,8 @@ class ftpsServer :
     #Constructor 
     def __init__(self,cert,key,ftpsStorage,serverName='FTPS',serverDirectory=os.getcwd()) :
         #self.server = SSLServerSocket
-        self.db = ftpsStorage
+        self.ftpsStorage = ftpsStorage
+        self.db = self.ftpsStorage.db
         self.serverName = serverName
         self.serverDir = serverDirectory
         self.server_cert = cert
@@ -41,7 +43,7 @@ class ftpsServer :
     storPat = re.compile(r'\s+([\S]+\.[\S]+)',re.I)
     cperFilePat = re.compile(r'[\S]+',re.I)
 
-    #Bind the SSLSocket to IP Address and Port and Start the server
+    # Bind the SSLSocket to IP Address and Port and Start the server
     def bind(self,host='',port=21) :
         self.serverHost = host
         self.serverPort = port
@@ -51,8 +53,14 @@ class ftpsServer :
         self.isServer = True
         print('FTPS Server Ready')
 
-    #Start Accepting Client request ; //Using multi-threading concepts for multi-user system
+    # Start Accepting Client request ; //Using multi-threading concepts for multi-user system
     def start(self) :
+        self.isServer = True
+        startT = threading.Thread(target=self.startThread,args=())
+        startT.start()
+        return
+
+    def startThread(self) :
         while self.isServer :
             try :
                 clientSocket,addr = self.controlServer.accept()
@@ -65,8 +73,9 @@ class ftpsServer :
                 type,value,traceback = sys.exc_info()
                 print('Error in Accepting Client :',type)
 
-    #Close the Server
+    # Save the database and Close the Server
     def close(self) :
+        self.ftpsStorage.save()
         self.isServer = False
         self.controlServer.close()
 
@@ -127,7 +136,10 @@ class ftpsServer :
             # PWD : (Path of Working Directory) return user's working directory, this is same as user['home'] field in database
                 if cmd == 'PWD' : res['response'] = '200 : '+ userDetail['curPer'] +'  ~/'+(os.path.basename(userDetail['home'])+os.path.sep+userDetail['cwd']).replace(os.path.sep,'/') 
             # LIST :(List files) return a list of files in current directory along with user's permission on them
-                elif cmd == 'LIST' : 
+                elif cmd == 'LIST' :
+                    if not (self.listPat.search(req) or re.compile('^list\s*$',re.I).search(req)) : 
+                        client.send('530 SyntaxError : "LIST [-(f|d|onlyfiles|onlydirectories)]"'.encode())
+                        continue 
                     rlist = self.__list(req,userDetail)
                     ls = []
                     for item in rlist :
@@ -180,7 +192,7 @@ class ftpsServer :
                     r = ''
                     if args == [] : 
                         for k,v in self.db['perm_hier'].items() :
-                            r += '\n' + k.ljust(15) + '\t' + per.get(v,'---')
+                            r += '\n' + k.ljust(15) + '\t' + per.get(v[0],'---')
                         res['response'] = '322 : '+' ~/'+path.replace(os.path.sep,'/')+'\n\n'+ os.path.basename(path.strip(os.path.sep)) +' : '+ pwalk.get('mode','public')+'\n'+ ''.ljust(20,'-') + r
 
                     else :
@@ -274,7 +286,7 @@ class ftpsServer :
                 break
     
     #cper (change permission of a file) : sets mode(public or private) and permission at different level of designation  of a file
-    #       a user can only change add permission that he has and only for designation which is below his 
+        #  a user can only change add permission that he has and only for designation whose priority is below his 
     def __cper(self,user,files,typ,args=[]) :
         if user['cwd'] == '' : path = user['home']
         else : path = os.path.join(user['home'],user['cwd'])
@@ -295,6 +307,13 @@ class ftpsServer :
             return '321 : Permissions changed as permitted'+r
         return '320 : Permissions changed successfully'
 
+    # get user designation priority
+    def dbGetPriority(self,dest) :
+        for v in self.db['perm_hier'].values() :
+            if v[0] == dest :
+                return int(v[1])
+        return 99
+
     #dirHier : (Directory Hierarchy) 
     # db : database containing directory hierarchy, plist : directory path, user : current user-info, typ : new file mode (public or private)
     # args : new permission at designations, flist : filename list whose permissions to be changed, lastPer : last private directory permission 
@@ -311,6 +330,7 @@ class ftpsServer :
             return db
 
         if len(plist) <= 0 :
+            userPriority = self.dbGetPriority(user['dest'])
             newPer = {}
             phier = self.db['perm_hier']
             utyp = []
@@ -328,8 +348,8 @@ class ftpsServer :
                         newPer[utyp.pop(0)] = p
                 else :
                     order = phier.get(i,'999')
-                    if order != '999' and int(user['dest']) < int(order):
-                        utyp.append(order)
+                    if order != '999' and userPriority < int(order[1]):
+                        utyp.append(order[0])
                     else : isPartial.append(True)
 
             if len(flist) == 0 :
@@ -547,7 +567,7 @@ class ftpsServer :
                 res['response'] = '331 : Username OK, need password'
                 res['userDetail']['name'] = user
                 res['userDetail']['cwd'] = ''
-                res['userDetail']['dest'] = self.db['perm_hier'][res['userDetail'].get('designation',"viewer")]
+                res['userDetail']['dest'] = self.db['perm_hier'].get(res['userDetail'].get('designation',"viewer"),'viewer')[0]
 
                 path = res['userDetail']['home']
                 path = path.strip(' ./')
@@ -985,3 +1005,64 @@ class ftpsClient :
         client = context.wrap_socket(clientSocket,server_hostname=self.serverName)
         return client
 
+class ftpsDatabase :
+    templet = {"perm_hier" :{"owner" : "1","viewer" : "99"},
+            "users" : {"admin":{"password":"welcome","designation":"owner","home":"Organization"}},
+            "dir_hier":{"Organization":{"mode":"public","list":{},"permission":{}}}}
+    db = templet
+    dbpath = None
+
+    # Add or Modify user info
+    def addUser(self,name,password,home="Organization",designation='viewer') :
+        self.db['users'][name] = {
+            'password' : password,
+            'home' : home,
+            "designation" : designation
+        }
+        print('user added')
+    # constructor , path is the path to a file to save database as string
+    def __init__(self,path) :
+        try : 
+            f = open(path,'r')
+            self.db = json.load(f)
+            self.dbpath = path
+        except:
+            print(sys.exc_info())
+
+    # Remove a user
+    def removeUser(self,name) :
+        try :
+            del self.db['users'][name]
+        except:
+            print(sys.exc_info())
+        
+        print(self.db)
+
+    # Save current database details/values to a file
+    def save(self,path='') :
+        if path == '' : path = self.dbpath
+        buf = json.dumps(self.db,indent=4)
+        try :
+            f = open(path,'w')
+            f.write(buf)
+            f.close()
+        except:
+            print(sys.exc_info())
+
+    # Add or modify designation in db['perm_hier'] 
+    def addDesignation(self,name,priority,count=-1) :
+        if count == -1 : 
+            count = len(self.db["perm_hier"]) - 1
+            self.db['perm_hier'][name] = [str(count),priority]
+        elif count == 99 :
+            print('99 is predefined as viewer')
+        else :
+            self.db['perm_hier'][name] = [str(count),priority]
+    
+    # Remove designation
+    def removeDesignation(self,name) :
+        del self.db['perm_hier'][name]
+
+    # Create a templet of database
+    def newDatabaseJSON(self) :
+        return self.templet

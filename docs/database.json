@@ -1,0 +1,95 @@
+{
+    "perm_hier": {
+        "owner": [
+            "1",
+            "1"
+        ],
+        "group": [
+            "2",
+            "2"
+        ],
+        "viewer": [
+            "99",
+            "99"
+        ],
+        "manager": [
+            "3",
+            "7"
+        ]
+    },
+    "users": {
+        "Bharath": {
+            "password": "2310",
+            "home": "Organization",
+            "designation": "owner",
+            "name": "Bharath",
+            "cwd": "wwe\\dir2",
+            "dest": "1",
+            "homePer": "RWX",
+            "curPer": "RWX",
+            "pwd": "Organization"
+        },
+        "Harish": {
+            "password": "2311",
+            "home": "Organization",
+            "designation": "group",
+            "name": "Harish",
+            "cwd": "wwe",
+            "dest": "2",
+            "homePer": "RW-",
+            "curPer": "RW-",
+            "pwd": "Organization"
+        },
+        "Girish": {
+            "password": "2312",
+            "home": "Organization",
+            "designation": "group"
+        },
+        "Admin": {
+            "password": "admin",
+            "home": "Organization",
+            "designation": "viewer"
+        }
+    },
+    "dir_hier": {
+        "Organization": {
+            "mode": "private",
+            "list": {
+                "wwe": {
+                    "mode": "private",
+                    "list": {
+                        "dir2": {
+                            "mode": "public",
+                            "list": {
+                                "sub1": {
+                                    "mode": "private",
+                                    "permission": {
+                                        "1": "RWX",
+                                        "2": "RW-",
+                                        "99": "RW-"
+                                    }
+                                }
+                            },
+                            "permission": {
+                                "1": "RWX",
+                                "2": "RW-",
+                                "99": "R--"
+                            }
+                        }
+                    },
+                    "permission": {
+                        "1": "RWX",
+                        "2": "RW-",
+                        "99": "RW-"
+                    }
+                }
+            },
+            "permission": {
+                "1": "RWX",
+                "2": "RW-",
+                "99": "RW-",
+                "3": "RW-"
+            }
+        }
+    }
+}
