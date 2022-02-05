@@ -7,9 +7,14 @@ import ftpsLib
 
 #serverName should be same as that in the server_cert
 serverName = 'FTPS'
+serverHost = 'localhost'
+serverPort = 21
+
+#Server Certificate and key
 server_cert = 'docs/server/server.crt'
 server_key = 'docs/server/server.key'
 dbPath = 'docs/database.json'
+
 
 #Function to terminate the server
 def endServer() :
@@ -28,7 +33,7 @@ serverTerminator = threading.Thread(target=endServer, args = (),daemon=True)
 serverTerminator.start()
 
 ftpsserver = ftpsLib.ftpsServer(server_cert,server_key,db,serverDirectory = 'ServerDirectory')
-ftpsserver.bind(host='',port=21)
+ftpsserver.bind(host=serverHost,port=serverPort)
 ftpsserver.start()
 
     

@@ -288,7 +288,7 @@ class ftpsServer :
                 break
     
     #cper (change permission of a file) : sets mode(public or private) and permission at different level of designation  of a file
-        #  a user can only change add permission that he has and only for designation whose priority is below his 
+        #  a user can only change or add permission that he has and only for designation whose priority is below his 
     def __cper(self,user,files,typ,args=[]) :
         if user['cwd'] == '' : path = user['home']
         else : path = os.path.join(user['home'],user['cwd'])
