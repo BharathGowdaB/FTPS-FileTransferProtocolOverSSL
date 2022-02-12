@@ -2,7 +2,7 @@ import threading,os,sys,re
 import traceback,random,json
 import shutil
 import ssl
-from socket import *
+from socket import *  
 
 class ftpsServer :
     controlServer = None
@@ -69,9 +69,12 @@ class ftpsServer :
                 client.start()
             except :
                 #Gives SSLSocket Errors
-                print(sys.exc_info())
-                type,value,traceback = sys.exc_info()
-                print('Error in Accepting Client :',type)
+                if not self.isServer : 
+                    print('FTPS Server Closed')
+                else : 
+                    print(sys.exc_info())
+                    type,value,traceback = sys.exc_info()
+                    print('Error in Accepting Client :',type)
 
     # Save the database and Close the Server
     def close(self) :
@@ -150,7 +153,7 @@ class ftpsServer :
                 # STOR :(Store files) file will be stored in the current directory
                 # RETR :(Retrive files) specified files will be retrived and stored in client's pwd(in remote host)
                 elif cmd == 'RETR' or cmd == 'STOR':
-                    if '/' in req : res['response'] = '580 RefereceError : Use only filenames,\ndon\'t use relative path or directory'
+                    if '/' in req : res['response'] = '590 RefereceError : Use only filenames,\ndon\'t use relative path or directory'
                     else :
                         flist = self.storPat.findall(req)
                         client.send('130 : Data connection established,\ntransfering requested data'.encode())
@@ -211,7 +214,7 @@ class ftpsServer :
                                     per2 = per
                                 r += '\n\n' +f + ' : '+ w.get('mode','public') + '\n' +''.ljust(20,'-')
                                 for k,v in self.db['perm_hier'].items() :
-                                    r += '\n' + k.ljust(15) + '\t' + per2.get(v,'---')
+                                    r += '\n' + k.ljust(15) + '\t' + per2.get(v[0],'---')
                                
                             else :
                                 nofile.append(f)
@@ -298,7 +301,7 @@ class ftpsServer :
         elif 'pub' in typ : typ = 'public'
 
         if len(plist) <= 0 : 
-            return '542 AccessError : Access denied'
+            return '543 AccessError : Access denied'
 
         start = plist.pop(0)
         isPartial = []
@@ -483,9 +486,9 @@ class ftpsServer :
                             except :
                                 print(466,sys.exc_info())
                             if partial : r[len(r)-1] += ' - 264 : Directory removed as Permitted'
-                            else : r[len(r)-1] += ' - 263 :  Directory removed sucessfully'
+                            else : r[len(r)-1] += ' - 263 :  Directory removed successfully'
                     else :
-                        if path == '/' and user['cwd'] == '' : return '402 Access Denied'
+                        if path == '/' and user['cwd'] == '' : return '443 AccessError : Access Denied'
                         curPer = user['curPer']
                         plist = path.split(os.path.sep)
                         if plist[0] == '' : plist.pop(0)
@@ -499,15 +502,20 @@ class ftpsServer :
                                         curPer = '---'
                             except :
                                 continue
-                        print(curPer)
+                        #print(curPer)
                         if 'w' not in curPer.lower() : 
                             r[len(r)-1] += ' - 540 AccessError : Write permission required'
                             continue
                         newPath = os.path.join(self.serverDir,newPath)
                         try :     
                             os.rmdir(newPath)
+                            r[len(r)-1] += ' - 263 : Directory removed successfully'
                         except :
-                            r[len(r)-1] += ' - 572 DirError : Directory not empty'
+                            try :
+                                os.remove(newPath)
+                                r[len(r)-1] += ' - 265 : file removed successfully'
+                            except:
+                                r[len(r)-1] += ' - 572 DirError : Directory not empty'
                     if path == '/' : self.chdir('cwd ../',user)
             return '\n'.join(r)
 
@@ -669,7 +677,7 @@ class ftpsServer :
         if walk :  
             user['cwd'] = newCWD
             return '241 : Directory changed sucessfully'
-        elif walkCWD == user['cwd'] : return '405 Access Denied'
+        elif walkCWD == user['cwd'] : return '443 AccessError : Access Denied '
         else :
             user['cwd'] = walkCWD 
             return '242 : Directory changed based on users\'s permission'
@@ -905,8 +913,45 @@ class ftpsClient :
             if self.cwdPat.search(cmd) : iscmd = True
             else : print('synatx error : "CWD <path>"')
         elif c == 'HELP' :
-            if self.helpPat.search(cmd) : iscmd = True
-            else : print('syntax error : "HELP [-CMD]"')
+            print('''\nCommand Syntax : <cmd> [options]
+
+# USER : (User Name) : checks is requested new user if legit or not
+	syntax : USER <username>" \ni) \'username\' must be a single word consisting of alphabets, digits and underscore.
+
+# PASS :(Password) : authenticates the requested user, it follows user command
+	syntax : PASS <password>" \ni)\'password\' must be a single word consisting of alphabets, digits and special character(_@$)
+
+# QUIT :(Quit) Terminate or end the user session   
+	syntax : QUIT
+                           
+# PWD : (Path of Working Directory) return user's working directory, this is same as user['home'] field in database
+	syntax : PWD
+
+# CWD :(Current working directory) returns path to directory the user's in
+	syntax : CWD 
+       
+# LIST :(List files) return a list of files in current directory along with user's permission on them
+	syntax : LIST [-(f|d|onlyfiles|onlydirectories)]
+
+# RETR , STOR : creates new data connection for specified file transfer ,
+         # STOR :(Store files) file will be stored in the current directory
+         # RETR :(Retrive files) specified files will be retrived and stored in client's pwd(in remote host)
+		
+	syntax : <STOR | RETR> <fileName/s>
+
+# MDIR , RDIR : create or remove a directory,user has to have 'w'(write) permission in cwd
+         # MDIR :(Make Directory) Create one or more  directories ,has '-r' option for recursive creation of directories
+	 # RDIR :(Remove Directory) Remove one or more  directories , has '-r' option for recursive deleting directories as per current user's permissions
+		
+	syntax : <MDIR | RDIR> [-options] <directory/s>
+
+# PPER :(Present Permission of file/Dir) Returns permission at different level of designation defined in database['perm_hier']   
+	syntax : PPER [dir/filenames]
+
+# CPER :(Change Permission of file/Dir) sets mode(public or private) and permission at different level of designation  of a file a user can only change add permission that he has and only for designation which is below his         
+   	syntax : CPER [dir/filenames] -<pri[vate] | pub[lic]> : <designation> -<permission>..         
+''')
+            iscmd = False
         elif c == 'CPER' :
             if self.cperPat.search(cmd) : iscmd = True
             else : print('syntax error : "CPER [dir/filenames] -<pri[vate] | pub[lic]> : <designation> -<permission>.." \n1) for -pub[lic] option <destignation> <permission>.. not required.\n2) designation should match that of database\n3) permission must be of the form \'---\' ex: RWX. RW-')

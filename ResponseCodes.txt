@@ -1,1 +1,99 @@
+Commands :
+
+Command Syntax : <cmd> [options]
+
+# USER : (User Name) : checks is requested new user if legit or not
+	syntax : USER <username>" \ni) \'username\' must be a single word consisting of alphabets, digits and underscore.
+
+# PASS :(Password) : authenticates the requested user, it follows user command
+	syntax : PASS <password>" \ni)\'password\' must be a single word consisting of alphabets, digits and special character(_@$)
+
+# QUIT :(Quit) Terminate or end the user session   
+	syntax : QUIT
+                           
+# PWD : (Path of Working Directory) return user's working directory, this is same as user['home'] field in database
+	syntax : PWD
+
+# CWD :(Current working directory) returns path to directory the user's in
+	syntax : CWD 
+       
+# LIST :(List files) return a list of files in current directory along with user's permission on them
+	syntax : LIST [-(f|d|onlyfiles|onlydirectories)]
+
+# RETR , STOR : creates new data connection for specified file transfer ,
+         # STOR :(Store files) file will be stored in the current directory
+         # RETR :(Retrive files) specified files will be retrived and stored in client's pwd(in remote host)
+		
+	syntax : <STOR | RETR> <fileName/s>
+
+# MDIR , RDIR : create or remove a directory,user has to have 'w'(write) permission in cwd
+         # MDIR :(Make Directory) Create one or more  directories ,has '-r' option for recursive creation of directories
+	 # RDIR :(Remove Directory) Remove one or more  directories , has '-r' option for recursive deleting directories as per current user's permissions
+		
+	syntax : <MDIR | RDIR> [-options] <directory/s>
+
+# PPER :(Present Permission of file/Dir) Returns permission at different level of designation defined in database['perm_hier']   
+	syntax : PPER [dir/filenames]
+
+# CPER :(Change Permission of file/Dir) sets mode(public or private) and permission at different level of designation  of a file a user can only change add permission that he has and only for designation which is below his         
+   	syntax : CPER [dir/filenames] -<pri[vate] | pub[lic]> : <designation> -<permission>..         
+                                           
+
+
+Response Codes : 
+
+130 : Data connection established,\ntransfering requested data
+131 : File transfer started
+132 : File transfer ended
+
+200 : Command ok\n
 223 : Connection established over SSL
+
+241 : Directory changed sucessfully
+242 : Directory changed based on users\'s permission
+
+255  : Folder is empty
+
+260 : Directory created sucessfully
+262 : Home directory emptyed
+263 :  Directory removed sucessfully
+264 : Directory removed as Permitted
+
+321 : Permissions changed as permitted
+320 : Permissions changed successfully
+331 : Username OK, need password
+332 : Password OK
+
+754 : Connection Lost
+755 : Closing control connection
+
+
+Error Codes :
+
+502 : Command not implemented
+503 SyntaxError :
+
+530 LoginError : Not logged in
+531 SyntaxError : Required arguments not passed
+532 UserError : Set User
+
+540 AccessError : Write permission required
+541 AccessError : Read permission required
+542 AccessError : Read-Write permission required
+543 AccessError : Access denied
+
+552 PathError : Usage of "../" not Supported
+551 PathError : Path already exists
+550 PathError : Path doesn\'t exists
+
+571 DirError : Not a valid name
+572 DirError : Directory not empty
+
+580 FileError : Requested file not found
+581 FileError : Requested file doesn\'t exists
+
+590 RefereceError : Use only filenames,don't use relative path or directory
+
+
+
+

@@ -11,10 +11,6 @@
         "viewer": [
             "99",
             "99"
-        ],
-        "manager": [
-            "3",
-            "7"
         ]
     },
     "users": {
@@ -23,11 +19,11 @@
             "home": "Organization",
             "designation": "owner",
             "name": "Bharath",
-            "cwd": "",
+            "cwd": "dir1",
             "dest": "1",
             "homePer": "RWX",
             "curPer": "RWX",
-            "pwd": ""
+            "pwd": "Organization"
         },
         "Harish": {
             "password": "2311",
@@ -45,10 +41,16 @@
             "home": "Organization",
             "designation": "group"
         },
-        "Admin": {
-            "password": "admin",
+        "guest": {
+            "password": "welcome",
             "home": "Organization",
-            "designation": "viewer"
+            "designation": "viewer",
+            "name": "guest",
+            "cwd": "",
+            "dest": "99",
+            "homePer": "RW-",
+            "curPer": "RW-",
+            "pwd": "Organization"
         }
     },
     "dir_hier": {
@@ -62,6 +64,14 @@
                             "mode": "public",
                             "list": {
                                 "supersub1": {
+                                    "mode": "private",
+                                    "permission": {
+                                        "1": "RWX",
+                                        "2": "RW-",
+                                        "99": "RW-"
+                                    }
+                                },
+                                "supersub2": {
                                     "mode": "private",
                                     "permission": {
                                         "1": "RWX",
